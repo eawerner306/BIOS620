@@ -1,0 +1,141 @@
+---
+title: "620_HW1"
+author: "Ethan Werner"
+date: "2024-02-05"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+## install.packages("circular")
+library("circular")
+```
+
+## Question 2a
+
+```{r}
+st <- read.csv("C:/Users/Ethan W/Downloads/BIOS620_data.csv")
+st$Date <- as.Date(st$Date, format = c("%m/%d/%Y"))
+
+## Total ST Time-Series plot
+st$Total.ST.min <- as.ts(st$Total.ST.min)
+plot(st$Date, st$Total.ST.min, xlab = "Date", ylab = "Total Screen Time (minutes)", main = "Time Series Plot of Total Screen Time")
+lines(st$Date, st$Total.ST.min)
+
+## Social ST Time-Series plot
+st$Social.ST.min <- as.ts(st$Social.ST.min)
+plot(st$Date, st$Social.ST.min, xlab = "Date", ylab = "Social Screen Time (minutes)", main = "Time Series Plot of Social Screen Time")
+lines(st$Date, st$Social.ST.min)
+
+## Pickups Time-Series plot
+st$Pickups <- as.ts(st$Pickups)
+plot(st$Date, st$Pickups, xlab = "Date", ylab = "Pickups", main = "Time Series Plot of Phone Pickups")
+lines(st$Date, st$Pickups)
+
+## Daily Proportion of Social ST Time-Series plot
+st$Daily.Proportion.of.Social.Screen.Time <- as.ts(st$Daily.Proportion.of.Social.Screen.Time)
+plot(st$Date, st$Daily.Proportion.of.Social.Screen.Time, xlab = "Date", ylab = "Proportion of Social Screen Time", main = "Time Series Plot of Daily Proportion of Social Screen Time")
+lines(st$Date, st$Daily.Proportion.of.Social.Screen.Time)
+
+## Duration per Use Time-Series plot
+st$Daily.Duration.per.Use <- as.ts(st$Daily.Duration.per.Use)
+plot(st$Date, st$Daily.Duration.per.Use, xlab = "Date", ylab = "Duration per Use (in minutes)", main = "Time Series Plot of Screen Time Duration per Use")
+lines(st$Date, st$Daily.Duration.per.Use)
+```
+
+## Problem 2b
+
+```{r}
+pairs(~ Total.ST.min + Social.ST.min + Pickups + Daily.Proportion.of.Social.Screen.Time + Daily.Duration.per.Use, data = st)
+```
+
+## Problem 2c
+
+```{r}
+## Total ST Occupation Time Curve
+otc_total <- cumsum(st$Total.ST.min)
+plot(st$Date, otc_total, xlab = "Date", ylab = "Total Screen Time (minutes)", main = "Occupation Time Curve of Total Screen Time")
+lines(st$Date, otc_total)
+
+## Social ST Occupation Time Curve
+otc_social <- cumsum(st$Social.ST.min)
+plot(st$Date, otc_social, xlab = "Date", ylab = "Social Screen Time (minutes)", main = "Occupation Time Curve of Social Screen Time")
+lines(st$Date, otc_social)
+
+## Pickups Occupation Time Curve
+otc_pickups <- cumsum(st$Pickups)
+plot(st$Date, otc_pickups, xlab = "Date", ylab = "Pickups", main = "Occupation Time Curve of Phone Pickups")
+lines(st$Date, otc_pickups)
+
+## Daily Proportion of Social ST Occupation Time Curve
+otc_prop <- cumsum(st$Daily.Proportion.of.Social.Screen.Time)
+plot(st$Date, otc_prop, xlab = "Date", ylab = "Proportion of Social Screen Time", main = "Occupation Time Curve of Daily Proportion of Social Screen Time")
+lines(st$Date, otc_prop)
+
+## Duration per Use Occupation Time Curve
+otc_duration <- cumsum(st$Daily.Duration.per.Use)
+plot(st$Date, otc_duration, xlab = "Date", ylab = "Duration per Use (in minutes)", main = "Occupation Time Curve of Screen Time Duration per Use")
+lines(st$Date, otc_duration)
+```
+
+## Problem 2d
+
+```{r}
+acf(st$Total.ST.min, plot=FALSE)
+acf(st$Social.ST.min, plot=FALSE)
+acf(st$Pickups, plot=FALSE)
+acf(st$Daily.Proportion.of.Social.Screen.Time, plot=FALSE)
+acf(st$Daily.Duration.per.Use, plot=FALSE)
+```
+
+## Problem 3a, 3b
+
+```{r}
+st$Pickups.1st <- as.POSIXct(st$Pickups.1st, format = "%H:%M")
+circPickups <- circular::circular(as.numeric(st$Pickups.1st) * 360 / 86400 - 75, type = "angles", units = "degrees")
+
+plot(circPickups, main = "Circular Plot for First Pickup Time", zero = pi/2, rotation = "clock")
+```
+
+## Problem 3c
+
+```{r}
+rose.diag(circPickups, bins = 24, main = "Circular Histogram", rotation = "clock", zero = pi/2)
+```
+
+## Problem 4b
+
+```{r}
+st$Total.ST.hrs <- st$Total.ST.min / 60
+model <- glm(Pickups ~ log(Total.ST.hrs), data = st, family = "poisson")
+summary(model)
+```
+
+## Problem 4c
+
+```{r}
+## New variables
+st$day_of_week <- weekdays(st$Date)
+st$weekday <- ifelse(st$day_of_week %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), 1, 0)
+st$schoolday <- ifelse(st$Date >= c("2024-01-10"), 1, 0)
+
+## Model
+log_model <- glm(log(Pickups) ~ weekday + schoolday, data = st)
+summary(log_model)
+```
+
+## Problem 5a
+
+```{r}
+vm <- mle.vonmises(circPickups)
+vm$mu
+vm$kappa
+```
+
+## Problem 5b
+
+```{r}
+radian830 <- (8.5/24) * 2 * pi
+1 - pvonmises(radian830, mu = vm$mu, kappa = vm$kappa)
+```
+
