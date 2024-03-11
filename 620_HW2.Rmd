@@ -1,0 +1,58 @@
+---
+title: "620_HW2"
+author: "Ethan Werner"
+date: "2024-03-08"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages("systemfit")
+# install.packages("car")
+library(systemfit)
+library(car)
+```
+
+## Problem 2a
+```{r}
+st <- read.csv("C:/Users/Ethan W/Downloads/BIOS620_data.csv")
+st$Date <- as.Date(st$Date, format = c("%m/%d/%Y"))
+
+st$day_of_week <- weekdays(st$Date)
+st$weekday <- ifelse(st$day_of_week %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), 1, 0)
+st$schoolday <- ifelse(st$Date >= c("2024-01-10"), 1, 0)
+
+#lag 1 data
+st$Y1lag <- c(NA, head(st$Total.ST.min, -1))
+st$Y2lag <- c(NA, head(st$Social.ST.min, -1))
+
+model1 <- st$Total.ST.min ~ st$Y1lag + st$weekday + st$schoolday
+model2 <- st$Social.ST.min ~ st$Y2lag  + st$weekday + st$schoolday
+
+modelC <- list(Y1 = model1, Y2 = model2)
+
+SURmodel <- systemfit(modelC, "SUR", data = st)
+
+summary(SURmodel)
+```
+
+$\beta_0$ = 386.6915008
+$\beta_1$ = -0.0629131
+$\beta_2$ = 30.3920098
+$\beta_3$ = -78.9350677
+$\gamma_0$ = 160.516318
+$\gamma_1$ = -0.338054
+$\gamma_2$ = -38.743074
+$\gamma_3$ = -16.326946
+
+## Problem 2b
+
+In model 1, the only significant estimate is the $\beta_0$.
+In model 2, the significant estimates are $\gamma_0$, $\gamma_1$, and $\gamma_2$.
+These variables are all indicated by the '*' in the model.
+
+## Problem 2c
+```{r}
+linearHypothesis(SURmodel, "Y1_st$schoolday- Y2_st$schoolday ")
+```
+The p value for testing if $\beta_3$ = $\gamma_3$ = 0 is 0.2408, thus we would fail to reject.
